@@ -17,12 +17,16 @@
 
 // Global instance pointer
 matleap::frame_grabber *fg = 0;
+matleap::image_grabber *ig = 0;
 
 // Exit function
 void matleap_exit ()
 {
     delete fg;
     fg = 0;
+    
+    delete ig;
+    ig = 0;
 }
 
 /// @brief process interface arguments
@@ -72,6 +76,14 @@ int get_command (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             // frame grab command requires exactly one output
             if (nlhs != 0 && nlhs != 1)
                 mexErrMsgTxt ("Wrong number of outputs specified");
+        }
+        break;
+        case 2:
+        {
+            // image grab command has one input 
+            
+            // image grab has two outputs
+
         }
         break;
         default:
@@ -267,13 +279,70 @@ void get_frame (int nlhs, mxArray *plhs[])
     } // re: if f.hands.count() > 0
 }
 
+/// @brief get a image from the leap controller
+///
+/// @param nlhs matlab mex output interface
+/// @param plhs[] matlab mex output interface
+void get_image (int nlhs, mxArray *plhs[])
+{
+    // get the frame
+//     const matleap::frame &f = fg->get_frame ();
+    Leap::ImageList img = ig->get_image ();
+    
+    // create matlab frame struct
+//     const char *frame_field_names[] =
+//     {
+//         "id",
+//         "timestamp",
+//         "pointables",
+//         "hands"
+//     };
+    
+    const char *image_field_names[] =
+    {
+        "id",
+        "image"
+    };
+    int image_fields = sizeof (image_field_names) / sizeof (*image_field_names);
+    plhs[0] = mxCreateStructMatrix (1, 1, image_fields, image_field_names);
+    plhs[1] = mxCreateStructMatrix (1, 1, image_fields, image_field_names);
+    
+    if (img.count() == 2) {
+        // fill the frame struct
+        mxSetFieldByNumber (plhs[0], 0, 0, mxCreateDoubleScalar (img[0].sequenceId()));
+        mxSetFieldByNumber (plhs[1], 0, 0, mxCreateDoubleScalar (img[1].sequenceId()));
+    //     mxSetFieldByNumber (plhs[0], 0, 1, mxCreateDoubleScalar (f.timestamp));
+
+        const mwSize dims[] = {640, 240};
+        const int sizebuf = 640 * 240 * sizeof(unsigned char);
+        mxArray *fout = mxCreateNumericArray(2, dims, mxUINT8_CLASS, mxREAL);
+        void *pdata = mxGetData(fout);
+        
+        memcpy(pdata, img[0].data(), sizebuf);
+        mxSetFieldByNumber (plhs[0], 0, 1, fout);
+        
+        memcpy(pdata, img[1].data(), sizebuf);
+        mxSetFieldByNumber (plhs[1], 0, 1, fout);
+        
+        mxDestroyArray(fout);
+    }
+}
+
+
 void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-    if (!fg)
+//     if (!fg)
+//     {
+//         fg = new matleap::frame_grabber;
+//         if (fg == 0)
+//             mexErrMsgTxt ("Cannot allocate a frame grabber");
+//         mexAtExit (matleap_exit);
+//     }
+    if (!ig)
     {
-        fg = new matleap::frame_grabber;
-        if (fg == 0)
-            mexErrMsgTxt ("Cannot allocate a frame grabber");
+        ig = new matleap::image_grabber;
+        if (ig == 0)
+            mexErrMsgTxt ("Cannot allocate a image grabber");
         mexAtExit (matleap_exit);
     }
     switch (get_command (nlhs, plhs, nrhs, prhs))
@@ -292,6 +361,10 @@ void mexFunction (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         case 1:
         get_frame (nlhs, plhs);
         return;
+        // get image
+        case 2:
+            get_image (nlhs, plhs);
+            return;
         default:
         // this is a logic error
         mexErrMsgTxt ("unknown error: please contact developer");

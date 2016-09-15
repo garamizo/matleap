@@ -25,6 +25,29 @@ struct frame
     Leap::HandList hands;
 };
 
+
+/// @brief leap image grabber interface
+class image_grabber
+{
+private:
+    Leap::Controller controller;
+public:
+    /// @brief constructor
+    image_grabber ()
+    {
+        controller.setPolicyFlags (Leap::Controller::POLICY_BACKGROUND_FRAMES);
+        controller.setPolicyFlags (Leap::Controller::POLICY_IMAGES);
+    }
+    /// @brief get a image from the controller
+    ///
+    /// @return the frame
+    const Leap::ImageList get_image ()
+    {
+        return controller.images ();
+    }
+};
+
+
 /// @brief leap frame grabber interface
 class frame_grabber
 {
