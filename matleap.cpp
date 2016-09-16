@@ -286,45 +286,18 @@ void get_frame (int nlhs, mxArray *plhs[])
 void get_image (int nlhs, mxArray *plhs[])
 {
     // get the frame
-//     const matleap::frame &f = fg->get_frame ();
-    Leap::ImageList img = ig->get_image ();
-    
-    // create matlab frame struct
-//     const char *frame_field_names[] =
-//     {
-//         "id",
-//         "timestamp",
-//         "pointables",
-//         "hands"
-//     };
-    
-    const char *image_field_names[] =
-    {
-        "id",
-        "image"
-    };
-    int image_fields = sizeof (image_field_names) / sizeof (*image_field_names);
-    plhs[0] = mxCreateStructMatrix (1, 1, image_fields, image_field_names);
-    plhs[1] = mxCreateStructMatrix (1, 1, image_fields, image_field_names);
-    
-    if (img.count() == 2) {
-        // fill the frame struct
-        mxSetFieldByNumber (plhs[0], 0, 0, mxCreateDoubleScalar (img[0].sequenceId()));
-        mxSetFieldByNumber (plhs[1], 0, 0, mxCreateDoubleScalar (img[1].sequenceId()));
-    //     mxSetFieldByNumber (plhs[0], 0, 1, mxCreateDoubleScalar (f.timestamp));
+    Leap::ImageList imgs = ig->get_image ();
 
-        const mwSize dims[] = {640, 240};
+    const mwSize dims[] = {640, 240};
+    plhs[0] = mxCreateNumericArray (2, dims, mxUINT8_CLASS, mxREAL);
+    plhs[1] = mxCreateNumericArray (2, dims, mxUINT8_CLASS, mxREAL);
+    plhs[2] = mxCreateDoubleScalar (imgs.count() == 2 ? imgs[0].sequenceId() : -1);
+    
+    if (imgs.count() == 2) {
+        
         const int sizebuf = 640 * 240 * sizeof(unsigned char);
-        mxArray *fout = mxCreateNumericArray(2, dims, mxUINT8_CLASS, mxREAL);
-        void *pdata = mxGetData(fout);
-        
-        memcpy(pdata, img[0].data(), sizebuf);
-        mxSetFieldByNumber (plhs[0], 0, 1, fout);
-        
-        memcpy(pdata, img[1].data(), sizebuf);
-        mxSetFieldByNumber (plhs[1], 0, 1, fout);
-        
-        mxDestroyArray(fout);
+        memcpy(mxGetData(plhs[0]), imgs[0].data(), sizebuf);
+        memcpy(mxGetData(plhs[1]), imgs[1].data(), sizebuf);
     }
 }
 

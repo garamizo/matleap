@@ -1,3 +1,3 @@
-function [img1, img2] = matleap_image
+function [img1, img2, idx] = matleap_image
 % MATLEAP_IMAGE Get a image from the leap motion controller
-[img1, img2] = matleap(2);
+[img1, img2, idx] = matleap(2);
